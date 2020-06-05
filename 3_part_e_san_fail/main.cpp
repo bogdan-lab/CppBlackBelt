@@ -12,7 +12,7 @@ using namespace std;
 int main() {
 
     ifstream infile;
-    infile.open("input");
+    infile.open("input2");
   const auto input_doc = Json::Load(infile);
   const auto& input_map = input_doc.GetRoot().AsMap();
     infile.close();
