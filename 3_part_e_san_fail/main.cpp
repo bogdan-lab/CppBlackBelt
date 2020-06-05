@@ -11,11 +11,11 @@ using namespace std;
 
 int main() {
 
-    ifstream infile;
-    infile.open("input2");
-  const auto input_doc = Json::Load(infile);
+//    ifstream infile;
+//    infile.open("input3");
+  const auto input_doc = Json::Load(cin);
   const auto& input_map = input_doc.GetRoot().AsMap();
-    infile.close();
+//    infile.close();
   const TransportCatalog db(
     Descriptions::ReadDescriptions(input_map.at("base_requests").AsArray()),
     input_map.at("routing_settings").AsMap()
