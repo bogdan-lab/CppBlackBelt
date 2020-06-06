@@ -10,6 +10,86 @@
 using namespace std;
 
 
+class Combiner
+{
+public:
+    Combiner() = delete;
+    Combiner(int64_t, int64_t);
+    void PerformSum();
+    void PrintResult(std::ostream&);
+
+private:
+    const int64_t first_;
+    const int64_t second_;
+
+    std::optional<int64_t> result_ = std::nullopt;
+
+    bool sum_is_overflow() const;
+};
+
+
+Combiner InitCombiner(std::istream&);
+
+
+Combiner::Combiner(int64_t f, int64_t s) : first_(f), second_(s) {}
+
+
+Combiner InitCombiner(std::istream& input)
+{
+    int64_t f, s;
+    input >> f >> s;
+    return Combiner(f, s);
+}
+
+
+void Combiner::PerformSum()
+{
+    if (!sum_is_overflow())
+        result_ = first_ + second_;
+}
+
+
+void Combiner::PrintResult(std::ostream& output)
+{
+    if (result_)
+    {
+        output << *result_;
+    }
+    else
+    {
+        output << "Overflow!";
+    }
+}
+
+
+bool Combiner::sum_is_overflow() const
+{
+    if (first_ >= 0 && second_ >= 0)
+    {
+        const int64_t max_ = INT64_MAX;
+        const int64_t diff = max_ - first_;
+        return second_ > diff;
+    }
+    if (first_ < 0 && second_ < 0)
+    {
+        const int64_t min_ = INT64_MIN;
+        const int64_t diff = min_ - first_;
+        return second_ < diff;
+    }
+    return false;
+}
+
+
+int main(){
+    Combiner cmb = InitCombiner(cin);
+    cmb.PerformSum();
+    cmb.PrintResult(cout);
+    return 0;
+}
+
+
+
+/*
 enum SIGN{
     PLUS,
     MINUS
@@ -224,3 +304,4 @@ int main(){
 
     return 0;
 }
+*/
