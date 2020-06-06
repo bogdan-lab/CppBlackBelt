@@ -3,10 +3,12 @@
 #include <sstream>
 #include <optional>
 #include <utility>
+#include <deque>
 #include <unordered_map>
 //#include "test_runner.h"
 
 using namespace std;
+
 
 enum SIGN{
     PLUS,
@@ -14,37 +16,46 @@ enum SIGN{
 };
 
 struct Number{
-    uint64_t value;
+    deque<int> value;
     SIGN sign;
 };
 
-//                                                        5247764967072089291
+const Number LOWLIM = {{9,2,2,3,3,7,2,0,3,6,8,5,4,7,7,5,8,0,9}, SIGN::MINUS};
+const Number UPLIM  = {{9,2,2,3,3,7,2,0,3,6,8,5,4,7,7,5,8,0,8}, SIGN::PLUS};
+
+bool LeftBigger(const Number& lhs, const Number& rhs){
+    if(lhs.sign!=rhs.sign){
+        return lhs.sign==SIGN::PLUS;
+    }
+    if(lhs.value.size() != rhs.value.size()){
+        return lhs.sign==SIGN::PLUS ? lhs.value.size()>rhs.value.size() : lhs.value.size()<rhs.value.size();
+    }
+    for(size_t i=0; i<lhs.value.size(); i++){
+        if(lhs.value[i]!=rhs.value[i]){
+            return lhs.value[i]>rhs.value[i];
+        }
+    }
+    return false; 	//here numbers equal
+}
+
+ostream& operator<<(ostream& out, const Number& num){
+    if(num.sign==SIGN::MINUS){out << "-";}
+    for(size_t i=0; i<num.value.size(); i++){
+        out << num.value[i];
+    }
+    return out;
+}
+
 const unordered_map<SIGN, uint64_t> LIMIT = {{SIGN::PLUS, 9223372036854775807u}, {SIGN::MINUS, 9223372036854775808u}};
 
-optional<uint64_t> Add(uint64_t lhs, uint64_t rhs, SIGN sign){
-    uint64_t res = lhs + rhs;
-    if(res < LIMIT.at(sign)){
-        return res;
-    }
-    return nullopt;
-}
-
-
-SIGN GetSign(const int64_t& num){
-    if(num>=0){
-        return SIGN::PLUS;
-    }
-    return SIGN::MINUS;
-}
-
-
-uint64_t ReadValue(istream& input){
-    uint64_t int_part = 0;
+deque<int> ReadValue(istream& input){
+   deque <int> value;
+    size_t idx = 0;
     while (isdigit(input.peek())) {
-      int_part *= 10;
-      int_part += input.get() - '0';
+      value.push_back(input.get() - '0');
+      idx++;
     }
-    return int_part;
+    return value;
 }
 
 
@@ -66,35 +77,67 @@ Number ReadNumber(istream& input){
 }
 
 
-pair<Number, Number> ReadNumbers(istream& input){
-    Number lhs = ReadNumber(input);
-    Number rhs = ReadNumber(input);
-    return make_pair(lhs, rhs);
+void ExtrapolateZeros(Number& num, size_t new_size){
+    size_t old_size = num.value.size();
+    for(size_t i=0; i<new_size - old_size; i++){
+        num.value.push_front(0);
+    }
+}
+
+Number AddNumbers(Number lhs, Number rhs){
+    size_t new_len = max(lhs.value.size(), rhs.value.size())+1;
+    ExtrapolateZeros(lhs, new_len);
+    ExtrapolateZeros(rhs, new_len);
+    Number res;
+    res.value = rhs.value;
+    int residue = 0;
+    for(int i=rhs.value.size()-1; i>=0; i--){
+        int num = lhs.value[i] + rhs.value[i];
+        if(num>10){
+            res.value[i] = num-10 + residue;
+            residue = 1;
+        }
+        else{
+            res.value[i] = num + residue;
+            residue = 0;
+        }
+    }
+    if(res.value[0]==0){res.value.pop_front();}
+    res.sign = lhs.sign;
+    return res;
 }
 
 
+int64_t ConvertToInt(const Number& num){
+    int64_t res = 0;
+    for(size_t i=0; i<num.value.size(); i++){
+        res*=10;
+        res-=num.value[i];
+    }
+    if(num.sign==SIGN::PLUS){
+        res*=-1;
+    }
+    return res;
+}
+
 
 void Process(istream& input=cin, ostream& output=cout){
-    auto nums = ReadNumbers(input);
-    optional<uint64_t> res;
-    SIGN res_sign;
-    if(nums.first.sign!=nums.second.sign){
-        res = max(nums.first.value, nums.second.value) - min(nums.first.value, nums.second.value);
-        res_sign = nums.first.value>nums.second.value ? nums.first.sign : nums.second.sign;
-    }
-    else{
-        if(nums.first.value<=INT64_MAX && nums.second.value<=INT64_MAX){
-            res = Add(nums.first.value, nums.second.value, nums.first.sign);
-            res_sign = nums.first.sign;
+    Number lhs = ReadNumber(input);
+    Number rhs = ReadNumber(input);
+    if(lhs.sign==rhs.sign){
+        Number res = AddNumbers(lhs, rhs);
+        if(LeftBigger(res, LOWLIM) && LeftBigger(UPLIM, res)){
+            output << res;
+        }
+        else{
+            output << "Overflow!";
         }
     }
-
-    if(res){
-        if(res_sign == SIGN::MINUS){output << "-";}
-        output << res.value();
-    }
-    else {
-        output << "Overflow!";
+    else{
+        int64_t num_1 = ConvertToInt(lhs);
+        int64_t num_2 = ConvertToInt(rhs);
+        int64_t res = num_1 + num_2;
+        output << res;
     }
 }
 
@@ -113,6 +156,20 @@ void Process(istream& input=cin, ostream& output=cout){
 //        stringstream out;
 //        Process(in, out);
 //        ASSERT_EQUAL(out.str(), "-2");
+//    }
+//    {
+//        stringstream in;
+//        in << "79 34";
+//        stringstream out;
+//        Process(in, out);
+//        ASSERT_EQUAL(out.str(), "113");
+//    }
+//    {
+//        stringstream in;
+//        in << "-459 -500";
+//        stringstream out;
+//        Process(in, out);
+//        ASSERT_EQUAL(out.str(), "-959");
 //    }
 //    {
 //        stringstream in;
